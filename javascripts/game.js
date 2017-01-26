@@ -5,29 +5,54 @@ Crafty.background('rgb(91,235,223)');
 //Init Variables
 var viewWidth = Crafty.viewport.width;
 var viewHeight = Crafty.viewport.height;
-//var brickColors = ['./icons/pink-brick.png','./icons/skyblue-brick.png','./icons/blue-brick.png'];
+//var brickColors = ['./icons/pink-brick.png', './icons/skyblue-brick.png', './icons/blue-brick.png'];
 var brickColors = ['rgb(21,223,21)', 'rgb(223,190,21)', 'rgb(223,21,21)'];
 
 
 // Loop to create bricks
 var brickWidth = 30;
 var brickHeight = 15;
-var brickX  = 60;
+var brickX = 60;
 var brickY = 80;
 for (var i = 0; i <= 12; i++) {
-  for(var j = 0; j <= 21; j++){
-  var levelOfBrick = Crafty.math.randomInt(1, 3);
-  var aBrick = Crafty.e("brick, 2D, Canvas, Color, Collision")
-    .color(brickColors[(levelOfBrick - 1)])
-    .attr({ x: brickX + (brickWidth * j), y: brickY + (brickHeight * i), w: brickWidth, h: brickHeight, level: levelOfBrick })
-    .onHit("Ball", function () {
-      --this.level;
-      if (this.level <= 0) {
-        this.destroy();
-        checkIfToDropPowerup();
-      }
-      this.color(brickColors[(levelOfBrick - 1)]);
-    });
+  for (var j = 0; j <= 21; j++) {
+    var levelOfBrick = Crafty.math.randomInt(1, 3);
+    var aBrick = Crafty.e("brick, 2D, Canvas, Color, Collision")
+      .color(brickColors[(levelOfBrick - 1)])
+      .attr({ x: brickX + (brickWidth * j), y: brickY + (brickHeight * i), w: brickWidth, h: brickHeight, level: levelOfBrick })
+      .onHit("Ball", function () {
+        --this.level;
+        if (this.level <= 0) {
+          this.destroy();
+          checkIfToDropPowerup(this);
+        }
+
+
+        // Speed booster
+        if (ball.dY < 0)
+          ball.dY -= 0.05;
+        else
+          ball.dY += 0.05;
+
+        if (ball.dX < 0)
+          ball.dX -= 0.05;
+        else
+          ball.dX += 0.05;
+
+
+        // Speed limiter
+        if (ball.dY > 8)
+          ball.dY = 8;
+
+        if (ball.dX > 8)
+          ball.dX = 8;
+        else if (ball.dX < -8)
+          ball.dX = -8;
+
+        if (this.level > 0) {
+          this.color(brickColors[(this.level - 1)]);
+        }
+      });
   }
 }
 
@@ -37,7 +62,7 @@ for (var i = 0; i <= 12; i++) {
 var player = Crafty.e('PlayerPaddle, 2D, Canvas, Color, Fourway')
   .attr({ x: (viewWidth / 2 - 50), y: (viewHeight - 30), w: 100, h: 10, powerup: "" })
   .color('rgb(205, 155, 155)')
-  .fourway(4)
+  .fourway(6)
   .bind('EnterFrame', function () {
     this.y = (viewHeight - 30);
     if (this.x < 0) {
@@ -103,8 +128,7 @@ var ball = Crafty.e('Ball, 2D, DOM, Image, Collision')
     var ballsMiddle = this.x + (this.w / 2);
     var playersMiddle = player.x + (player.w / 2);
     var dis = ballsMiddle - playersMiddle;
-    var reflection = (dis * 3) / (player.w / 2);
-    console.log(reflection);
+    var reflection = (dis * 4) / (player.w / 2);
     this.dX += Math.floor(reflection);
 
   })
@@ -120,14 +144,14 @@ var ball = Crafty.e('Ball, 2D, DOM, Image, Collision')
 //Lives Left
 Crafty.e('PlayerLives, DOM, 2D, Text')
   .attr({ x: 20, y: 20, w: 100, h: 20, lives: 3 })
-  .textColor('#FFFFFF', 0.8)
+  .textColor('#000000', 0.8)
   .text('3 Lives');
 
 
 // PowerUp board
 Crafty.e('PowerUp, DOM, 2D, Text')
   .attr({ x: 20, y: 40, w: 100, h: 20 })
-  .textColor('#FFFFFF', 0.8)
+  .textColor('#000000', 0.8)
   .text('Power Up : None');
 
 
@@ -169,7 +193,6 @@ function findNewBallDirection(brick) {
 
 
 function checkIfToDropPowerup() {
-
 }
 
 
