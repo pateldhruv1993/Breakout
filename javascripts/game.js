@@ -27,30 +27,52 @@ for (var i = 0; i <= 12; i++) {
           checkIfToDropPowerup(this);
         }
 
+        if (!ball.hot_knife) {
+          // Speed booster
+          if (ball.dY < 0)
+            ball.dY -= 0.05;
+          else
+            ball.dY += 0.05;
 
-        // Speed booster
-        if (ball.dY < 0)
-          ball.dY -= 0.05;
-        else
-          ball.dY += 0.05;
+          if (ball.dX < 0)
+            ball.dX -= 0.05;
+          else
+            ball.dX += 0.05;
 
-        if (ball.dX < 0)
-          ball.dX -= 0.05;
-        else
-          ball.dX += 0.05;
+          // Speed limiter
+          if (ball.dY > 8)
+            ball.dY = 8;
 
+          if (ball.dX > 8)
+            ball.dX = 8;
+          else if (ball.dX < -8)
+            ball.dX = -8;
 
-        // Speed limiter
-        if (ball.dY > 8)
-          ball.dY = 8;
-
-        if (ball.dX > 8)
-          ball.dX = 8;
-        else if (ball.dX < -8)
-          ball.dX = -8;
-
+          if (this.level > 0) {
+            this.color(brickColors[(this.level - 1)]);
+          }
+        }
+      })
+      .onHit("Bullet", function () {
+        --this.level;
+        if (this.level <= 0) {
+          this.destroy();
+          checkIfToDropPowerup(this);
+        }
         if (this.level > 0) {
           this.color(brickColors[(this.level - 1)]);
+        }
+
+        var theBullet = this.hit("Bullet");
+        if (theBullet != false) {
+          theBullet[0].obj.destroy();
+        }
+      })
+      .onHit("Nuke", function () {
+        this.level = 0;
+        if (this.level <= 0) {
+          this.destroy();
+          checkIfToDropPowerup(this);
         }
       });
   }
@@ -62,7 +84,7 @@ for (var i = 0; i <= 12; i++) {
 var player = Crafty.e('PlayerPaddle, 2D, Canvas, Color, Fourway')
   .attr({ x: (viewWidth / 2 - 50), y: (viewHeight - 30), w: 100, h: 10, powerup: "" })
   .color('rgb(205, 155, 155)')
-  .fourway(6)
+  .fourway(8)
   .bind('EnterFrame', function () {
     this.y = (viewHeight - 30);
     if (this.x < 0) {
@@ -71,16 +93,93 @@ var player = Crafty.e('PlayerPaddle, 2D, Canvas, Color, Fourway')
     if (this.x > viewWidth - this.w) {
       this.x = viewWidth - this.w;
     }
-  }).bind('KeyDown', function (e) {
+  }).bind('EnterFrame', function (e) {
 
-    // Powerup usage
-    if (e.key == Crafty.keys.SPACE) {
 
-      // Code to activate Power up
-      if (this.powerup != "") {
-        //Use and remove powerup
+    // Code to activate Power up
+    if (this.powerup != "") {
+      //Use and remove powerup
+      if (this.powerup == "expand") {
+        this.w += 50;
+        this.powerup = "";
+        Crafty.e("Delay").delay(function () {
+          player.w -= 50;
+          removePowerUpFrom();
+        }, 10000, 0);
+      }
+      else if (this.powerup == "rambo") {
+        this.powerup = "";
+        var bulletColor = 'rgb(247,180,38)';
+        Crafty.e("Delay").delay(function () {
+          Crafty.e('Bullet, 2D, Canvas, Color, Collision')
+            .attr({ x: player.x, y: player.y - 20, w: 5, h: 10, dX: 0, dY: -4 })
+            .color(bulletColor)
+            .bind('EnterFrame', function () {
+              if (this.y < 0 - this.h) {
+                this.destroy()
+              }
+              this.y += this.dY;
+            });
+
+          Crafty.e('Bullet, 2D, Canvas, Color, Collision')
+            .attr({ x: player.x + player.w - 5, y: player.y - 20, w: 5, h: 10, dX: 0, dY: -4 })
+            .color(bulletColor)
+            .bind('EnterFrame', function () {
+              if (this.y < 0 - this.h) {
+                this.destroy()
+              }
+              this.y += this.dY;
+            });
+        }, 500, 20, function () {
+          removePowerUpFrom();
+        });
+      } else if (this.powerup == "hot_knife") {
+        this.powerup = "";
+        ball.hot_knife = true;
+        ball.image('./icons/ball_red.png');
+        Crafty.e("Delay").delay(function () {
+          ball.hot_knife = false;
+          ball.image('./icons/ball.png');
+          removePowerUpFrom();
+        }, 10000, 0);
+      } else if (this.powerup == "fat_boy") {
+        this.powerup = "";
+        var nuke = Crafty.e('Bullet, 2D, DOM, Image, Collision')
+          .image("./icons/blue-brick.png")
+          .attr({
+            x: player.x + (player.w / 2) - 10, y: player.y - 20, w: 20, h: 20,
+            dX: 0,
+            dY: -3
+          })
+          .bind('EnterFrame', function () {
+            this.y += this.dY;
+            if (this.y < -20) {
+              this.destroy();
+            }
+          })
+          .onHit("brick", function () {
+            var blast = Crafty.e('Nuke, 2D, DOM, Color, Collision')
+              .color("rgb(247,180,38)")
+              .attr({
+                x: nuke.x + nuke.w - 150 / 2, y: nuke.y + nuke.h - 150 / 2, w: 150, h: 150
+              })
+              .bind('EnterFrame', function () {
+                if (blast.color() == "rgb(247,180,38)" || blast.color() == "rgba(247,180,38, 1.0)") {
+                  blast.color("rgba(247,180,38, 0.2)");
+                } else {
+                  blast.color("rgba(247,180,38, 1.0)");
+                }
+              });
+            Crafty.e("Delay").delay(function () {
+              blast.destroy();
+              removePowerUpFrom();
+            }, 600, 0, function () {
+            });
+            nuke.destroy();
+          });
 
       }
+
     }
   });;
 
@@ -94,7 +193,8 @@ var ball = Crafty.e('Ball, 2D, DOM, Image, Collision')
   .attr({
     x: viewWidth / 2, y: viewHeight / 2, w: 10, h: 10,
     dX: 0,
-    dY: 3
+    dY: 3,
+    hot_knife: false
   })
   .bind('EnterFrame', function () {
     //hit floor or roof
@@ -108,7 +208,13 @@ var ball = Crafty.e('Ball, 2D, DOM, Image, Collision')
     if (this.y >= viewHeight - this.h) {
       // Take away life
       Crafty("PlayerLives").each(function () {
-        this.text(--this.lives + " Lives");
+        if (this.lives > 0) {
+          this.text(--this.lives + " Lives");
+        } else {
+          Crafty("GameStatus").each(function () {
+            this.text("Game: Lost");
+          });
+        }
       });
 
       ball.x = viewWidth / 2;
@@ -122,6 +228,13 @@ var ball = Crafty.e('Ball, 2D, DOM, Image, Collision')
     }
     this.x += this.dX;
     this.y += this.dY;
+
+    if (Crafty("brick").length == 0) {
+      Crafty("GameStatus").each(function () {
+        this.text("Game: Won!");
+      });
+    }
+
   })
   .onHit('PlayerPaddle', function () {
     this.dY *= -1;
@@ -134,7 +247,7 @@ var ball = Crafty.e('Ball, 2D, DOM, Image, Collision')
   })
   .onHit("brick", function () {
     var theBrick = ball.hit("brick");
-    if (theBrick != false) {
+    if (theBrick != false && !this.hot_knife) {
       findNewBallDirection(theBrick[0].obj);
     }
   });
@@ -154,7 +267,11 @@ Crafty.e('PowerUp, DOM, 2D, Text')
   .textColor('#000000', 0.8)
   .text('Power Up : None');
 
-
+// Game status
+Crafty.e('GameStatus, DOM, 2D, Text')
+  .attr({ x: 20, y: 60, w: 100, h: 20 })
+  .textColor('#000000', 0.8)
+  .text('Game : In Progress');
 
 
 
@@ -192,13 +309,47 @@ function findNewBallDirection(brick) {
 
 
 
-function checkIfToDropPowerup() {
+function checkIfToDropPowerup(brick) {
+  var chanceOfDrop = Crafty.math.randomInt(1, 100);
+  if ((chanceOfDrop < 60 && !ball.hot_knife) || chanceOfDrop < 5) {
+    var dropIndex = Crafty.math.randomInt(1, 4);
+    if (dropIndex == 1) {
+      createPowerup("expand", brick);
+    } else if (dropIndex == 2) {
+      createPowerup("rambo", brick);
+    } else if (dropIndex == 3) {
+      createPowerup("hot_knife", brick);
+    } else if (dropIndex == 4) {
+      createPowerup("fat_boy", brick);
+    }
+  }
 }
 
 
-function removePowerUpFrom(item, powerUpBoard) {
-  item.powerup = "";
-  Crafty(powerUpBoard).each(function () {
-    this.text('Power Up: None');
+function createPowerup(dropName, brick) {
+  Crafty.e('2D, DOM, Image, Collision')
+    .image("./icons/" + dropName + ".png")
+    .attr({
+      x: brick.x + (brick.w / 2), y: brick.y, w: 20, h: 20, dX: 0, dY: 4
+    })
+    .onHit('PlayerPaddle', function () {
+      player.powerup = dropName;
+      Crafty('PowerUp').each(function () {
+        this.text('Power Up: ' + dropName);
+      });
+      this.destroy();
+    })
+    .bind('EnterFrame', function () {
+      if (this.y > viewHeight + this.h) {
+        this.destroy();
+      }
+      this.y += this.dY;
+    });
+}
+
+
+function removePowerUpFrom() {
+  Crafty('PowerUp').each(function () {
+    this.text('Power Up: none');
   });
 }
