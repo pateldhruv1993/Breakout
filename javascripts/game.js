@@ -145,9 +145,9 @@ var player = Crafty.e('PlayerPaddle, 2D, Canvas, Color, Fourway')
       } else if (this.powerup == "fat_boy") {
         this.powerup = "";
         var nuke = Crafty.e('Bullet, 2D, DOM, Image, Collision')
-          .image("./icons/blue-brick.png")
+          .image("./icons/nuke.png")
           .attr({
-            x: player.x + (player.w / 2) - 10, y: player.y - 20, w: 20, h: 20,
+            x: player.x + (player.w / 2) - 10, y: player.y - 20, w: 20, h: 49,
             dX: 0,
             dY: -3
           })
